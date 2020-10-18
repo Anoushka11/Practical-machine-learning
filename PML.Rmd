@@ -1,0 +1,98 @@
+---
+title: "pml"
+author: "anoushka"
+date: "18/10/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#question
+Analysis of Tooth growth data set.
+
+
+#Load the data
+
+```{r, results=FALSE}
+library(caret)
+library(Hmisc)
+library(corrplot)
+library(e1071)
+library(randomForest)
+```
+
+
+```{r}
+set.seed(3566)
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",
+              destfile = "./training.csv", 
+              method = "curl")
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",
+              destfile = "./testing.csv", 
+              method = "curl")
+```
+
+
+
+```{r}
+train1 = read.csv("training.csv")
+test1 = read.csv("testing.csv")
+```
+Next step is to find any missing values and clean the data.
+
+```{r}
+set.seed(3566)
+summary(train1)
+```
+```{r}
+set.seed(3566)
+train = read.csv("training.csv", na.strings=c("#DIV/0!"))
+train2 <- nearZeroVar(train)
+train<-train[ , -train2]
+variables <- colnames(train[colSums(is.na(train)) == 0])
+d<- train[variables]
+wd <- d[ , -(1:6)]
+dim(wd)
+```
+
+#Splitting the dataset
+We now proceed to splitting our dataset into testing and training. Testing=0.75% and training=0.25%
+We also find correlation between attributes.
+
+
+```{r}
+set.seed(3566)
+Train3 <- createDataPartition(y=wd$classe, p=0.75, list=FALSE )
+Trainingdata_sub <- wd[Train3,]
+Testingdata_sub <- wd[-Train3,]
+Q <- cor(Trainingdata_sub[ , -53])
+corrplot(Q, order = "FPC", method = "square")
+```
+
+We observe the correlation between all the attributes of the dataset to find hidden patterns.
+
+
+#Finding hidden patterns
+
+We need to plot the confusion matrix to find the true positives, false positives, true negatives and the false negatives.
+
+1. SVM:
+
+
+```{r}
+set.seed(3566)
+SVM1 <- svm(classe ~ ., data = Trainingdata_sub)
+SVMPredict <- predict(SVM1, newdata = Testingdata_sub)
+confusionMatrix(SVMPredict, Testingdata_sub$classe)
+```
+
+
+
+The svm aka support vector machine model gave the accuracy 94.09%. This is a good model.
+
+
